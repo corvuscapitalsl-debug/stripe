@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ALICANTE PREMIUM TRANSFER — Booking</title>
+  <meta name="description" content="Book premium taxi transfers in Alicante. Instant quote and secure payment via Stripe." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    window.APP_CONFIG = {
+      STRIPE_ENDPOINT: '/api/create-checkout-session',
+      GOOGLE_MAPS_API_KEY: 'AIzaSyBt39Wd5S6z188cSd1RIPPH4uToy_NJwHs'
+    };
+  </script>
+
+  <style>
+    :root{
+      --bg:#fafafa; --text:#111418; --muted:#6b7280; --accent:#000; --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+
+    /* Hero header */
+    .site-header{background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 16px}
+    .site-header .logo{height:180px;width:auto;border-radius:16px;background:#fff;padding:12px;box-shadow:0 6px 16px rgba(255,255,255,.35)}
+
+    .container{max-width:720px;margin:0 auto;padding:16px}
+    .progress{text-align:center;color:#6b7280;margin:8px 0 14px 0;font-weight:600}
+
+    .card{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);border:1px solid #e5e7eb;margin-bottom:25px}
+    .card h2{margin:4px 0 8px 0;text-align:center}
+
+    form label{display:block;font-weight:600;margin:12px 0 6px 0}
+    input,select{width:100%;padding:12px;border-radius:12px;border:1px solid #e5e7eb;font-size:16px}
+    input:focus,select:focus{outline:none;border-color:#000;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+
+    .actions{margin-top:16px;display:flex;gap:12px;justify-content:center}
+    button,.btn{appearance:none;border:0;background:#000;color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+
+    .hidden{display:none;opacity:0;transition:opacity .6s ease}
+    .visible{display:block;opacity:1;transition:opacity .6s ease}
+
+    .quote{margin-top:16px;background:#fafafa;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+    .quote.hidden{display:none;opacity:0}
+    .quote.visible{display:block;opacity:1}
+    .quote h3{margin:4px 0 8px 0;text-align:center}
+    .quote .line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e5e7eb;font-size:15px}
+    .quote .line:last-child{border-bottom:0}
+
+    .extra-note{color:var(--muted);font-size:13px;margin-top:4px}
+    .luggage{color:var(--muted);font-size:14px;margin-top:6px}
+    .small{color:var(--muted);font-size:12px;text-align:center}
+    .error{color:#b91c1c;font-size:14px;margin-top:6px;text-align:center}
+    .site-footer{text-align:center;color:#6b7280;padding:20px}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <img src="https://www.corvuscapital.me/app/logo.png" alt="ALICANTE PREMIUM TRANSFER" class="logo">
+  </header>
+
+  <main class="container">
+    <div id="progress" class="progress">Step 1 of 3</div>
+
+    <form id="bookingForm" lang="en">
+      <!-- Section 1: Personal details -->
+      <section id="section-personal" class="card visible">
+        <h2>Personal details</h2>
+        <label>Full Name<input type="text" id="name" required placeholder="John Smith"></label>
+        <label>Email<input type="email" id="email" required placeholder="you@example.com"></label>
+        <label>Phone<input type="tel" id="phone" required placeholder="+34 600 000 000" pattern="^\+?[0-9\s-]{6,}$"></label>
+      </section>
+
+      <!-- Section 2: Booking details -->
+      <section id="section-booking" class="card hidden">
+        <h2>Booking details</h2>
+        <label>Pickup Location<input type="text" id="origin" required placeholder="Enter and select from the list"></label>
+        <label>Drop-off Location<input type="text" id="destination" required placeholder="Enter and select from the list"></label>
+        <label>Date<input type="date" id="date" required onkeydown="return false" onpaste="return false" ondrop="return false" lang="en"></label>
+        <label>Time<input type="time" id="time" required></label>
+        <label>Passengers
+          <select id="passengers" required>
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- Section 3: Extras -->
+      <section id="section-extras" class="card hidden">
+        <h2>Extras</h2>
+        <label>Child seats
+          <select id="childSeatCount">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+        </label>
+        <div class="extra-note">1 free · 2 total +5€</div>
+
+        <label>Baby seats
+          <select id="babySeatCount">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+        </label>
+        <div class="extra-note">1 or 2 +10€</div>
+
+        <label>Golf bags
+          <select id="golfClubs">
+            <option value="0">0</option>
+            <option value="1">1 (+5€)</option>
+            <option value="2">2 (+10€)</option>
+            <option value="3">3 (+15€)</option>
+            <option value="4">4 (+20€)</option>
+          </select>
+        </label>
+
+        <label>Pets
+          <select id="pets">
+            <option value="no">No</option>
+            <option value="yes">Yes (+10€)</option>
+          </select>
+        </label>
+
+        <p class="luggage">Luggage: up to <strong>4</strong> items • Max size per item: <strong>56×40×25 cm</strong>.</p>
+
+        <div class="actions"><button type="button" id="calcBtn">Calculate Price</button></div>
+
+        <div id="quoteCard" class="quote hidden">
+          <h3>Quote</h3>
+          <div id="quoteDetails"></div>
+          <div class="actions"><button type="submit" id="payBtn">Pay and Confirm</button></div>
+          <p class="small">Payment is securely processed via Stripe. Booking is not confirmed until payment is completed.</p>
+          <div id="errorBox" class="error"></div>
+        </div>
+      </section>
+    </form>
+  </main>
+
+  <footer class="site-footer">
+    <p>© <span id="year"></span> ALICANTE PREMIUM TRANSFER</p>
+  </footer>
+
+  <script>
+    const RATE_PER_KM=1.30;
+    function euros(n){return new Intl.NumberFormat('en-GB',{style:'currency',currency:'EUR'}).format(n);}
+
+    // Extras pricing
+    function computeExtras({childSeatCount,babySeatCount,golfClubs,pets}){
+      const childFee=(Number(childSeatCount)===2)?5:0;
+      const babyFee=(Number(babySeatCount)>=1)?10:0;
+      const golfFee=Math.min(4,Math.max(0,Number(golfClubs)))*5;
+      const petFee=(pets==='yes')?10:0;
+      return{total:childFee+babyFee+golfFee+petFee};
+    }
+
+    // 8h rule
+    function isAtLeast8hAhead(dateStr,timeStr){
+      const[hh,mm]=timeStr.split(':').map(Number);
+      const d=new Date(dateStr);d.setHours(hh,mm,0,0);
+      const minDate=new Date(Date.now()+8*3600*1000);
+      return d.getTime()>=minDate.getTime();
+    }
+
+    // Progress indicator
+    function setProgress(step){
+      const el=document.getElementById('progress');
+      el.textContent=`Step ${step} of 3`;
+    }
+
+    // Automatic reveal logic
+    function sectionReady_personal(){
+      return document.getElementById('name').value.trim() && document.getElementById('email').value.trim() && document.getElementById('phone').value.trim();
+    }
+    function sectionReady_booking(){
+      return document.getElementById('origin').value.trim() &&
+             document.getElementById('destination').value.trim() &&
+             document.getElementById('date').value &&
+             document.getElementById('time').value &&
+             document.getElementById('passengers').value;
+    }
+    function showSection(idToShow, step){
+      ['section-personal','section-booking','section-extras'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(id===idToShow){el.classList.remove('hidden');el.classList.add('visible');}
+      });
+      setProgress(step);
+      document.getElementById(idToShow).scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    // Google Maps setup with Alicante bias (80km)
+    let directionsService;
+    function initMaps(){
+      directionsService=new google.maps.DirectionsService();
+      const center=new google.maps.LatLng(38.3452,-0.4810); // Alicante
+      const circle=new google.maps.Circle({center:center,radius:80000});
+      const options={bounds:circle.getBounds(),strictBounds:false,fields:['formatted_address','geometry','name']};
+      new google.maps.places.Autocomplete(document.getElementById('origin'),options);
+      new google.maps.places.Autocomplete(document.getElementById('destination'),options);
+    }
+    function loadMaps(){
+      const key=(window.APP_CONFIG&&window.APP_CONFIG.GOOGLE_MAPS_API_KEY)||'';
+      const s=document.createElement('script');
+      s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&callback=__mapsReady`;
+      s.async=true;s.defer=true;document.body.appendChild(s);
+    }
+    window.__mapsReady=()=>initMaps();
+
+    // Shortest route
+    async function getShortestRouteDistance(origin,destination){
+      return new Promise((resolve,reject)=>{
+        directionsService.route({origin,destination,travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},
+          (result,status)=>{
+            if(status!=='OK'||!result?.routes?.length)return reject('Unable to calculate route.');
+            let minMeters=Infinity,bestLeg;
+            result.routes.forEach(r=>{const leg=r.legs[0];if(leg.distance.value<minMeters){minMeters=leg.distance.value;bestLeg=leg;}});
+            resolve({meters:minMeters,distanceText:bestLeg.distance.text,durationText:bestLeg.duration.text});
+          });
+      });
+    }
+
+    // Calculate quote
+    document.getElementById('calcBtn').addEventListener('click',async()=>{
+      const origin=document.getElementById('origin').value.trim();
+      const destination=document.getElementById('destination').value.trim();
+      const date=document.getElementById('date').value;
+      const time=document.getElementById('time').value;
+      const passengers=Number(document.getElementById('passengers').value);
+      const childSeatCount=Number(document.getElementById('childSeatCount').value);
+      const babySeatCount=Number(document.getElementById('babySeatCount').value);
+      const golfClubs=Number(document.getElementById('golfClubs').value);
+      const pets=document.getElementById('pets').value;
+      const errorBox=document.getElementById('errorBox');errorBox.textContent='';
+      if(!isAtLeast8hAhead(date,time)){errorBox.textContent='Bookings must be at least 8 hours in advance.';return;}
+      if(passengers<1||passengers>4){errorBox.textContent='Number of passengers must be between 1 and 4.';return;}
+      try{
+        const {meters,distanceText,durationText}=await getShortestRouteDistance(origin,destination);
+        const km=meters/1000,base=km*RATE_PER_KM,extras=computeExtras({childSeatCount,babySeatCount,golfClubs,pets}),total=base+extras.total;
+        document.getElementById('quoteDetails').innerHTML=`
+          <div class="line"><span>Estimated distance</span><strong>${distanceText}</strong></div>
+          <div class="line"><span>Approx. duration</span><strong>${durationText}</strong></div>
+          <div class="line"><span>Base rate</span><strong>${euros(base)}</strong></div>
+          <div class="line"><span>Extras</span><strong>${euros(extras.total)}</strong></div>
+          <div class="line"><span><strong>Total</strong></span><strong>${euros(total)}</strong></div>`;
+        const q=document.getElementById('quoteCard');q.classList.remove('hidden');q.classList.add('visible');
+        q.dataset.distanceKm=km.toFixed(2);q.dataset.amount=total.toFixed(2);
+        q.scrollIntoView({behavior:'smooth',block:'center'});
+      }catch(e){errorBox.textContent='Could not calculate route. Please check locations.';console.error(e);}
+    });
+
+    // Submit to Stripe endpoint
+    document.getElementById('bookingForm').addEventListener('submit',async(e)=>{
+      e.preventDefault();
+      const q=document.getElementById('quoteCard');if(q.classList.contains('hidden'))return;
+      const btn=document.getElementById('payBtn');const err=document.getElementById('errorBox');err.textContent='';
+      const payload={
+        name:document.getElementById('name').value.trim(),
+        email:document.getElementById('email').value.trim(),
+        phone:document.getElementById('phone').value.trim(),
+        origin:document.getElementById('origin').value.trim(),
+        destination:document.getElementById('destination').value.trim(),
+        date:document.getElementById('date').value,
+        time:document.getElementById('time').value,
+        passengers:Number(document.getElementById('passengers').value),
+        childSeatCount:Number(document.getElementById('childSeatCount').value),
+        babySeatCount:Number(document.getElementById('babySeatCount').value),
+        golfClubs:Number(document.getElementById('golfClubs').value),
+        pets:document.getElementById('pets').value==='yes',
+        distanceKm:Number(q.dataset.distanceKm),
+        amountPreviewEUR:Number(q.dataset.amount)
+      };
+      btn.disabled=true;btn.textContent='Redirecting...';
+      try{
+        const endpoint=(window.APP_CONFIG&&window.APP_CONFIG.STRIPE_ENDPOINT)||'/api/create-checkout-session';
+        const resp=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const data=await resp.json();
+        if(!resp.ok||!data.url)throw new Error(data.error||'Payment session error');
+        window.location.href=data.url;
+      }catch(e){err.textContent=e.message||'Could not start payment.';btn.disabled=false;btn.textContent='Pay and Confirm';}
+    });
+
+    // Auto-advance logic based on completion
+    const personalFields=['name','email','phone'];
+    const bookingFields=['origin','destination','date','time','passengers'];
+
+    function checkPersonal(){
+      if(sectionReady_personal()){
+        const sec=document.getElementById('section-booking');
+        if(sec.classList.contains('hidden')){sec.classList.remove('hidden');sec.classList.add('visible');setProgress(2);sec.scrollIntoView({behavior:'smooth',block:'start'});}
+      }
+    }
+    function checkBooking(){
+      if(sectionReady_booking()){
+        const sec=document.getElementById('section-extras');
+        if(sec.classList.contains('hidden')){sec.classList.remove('hidden');sec.classList.add('visible');setProgress(3);sec.scrollIntoView({behavior:'smooth',block:'start'});}
+      }
+    }
+
+    personalFields.forEach(id=>{
+      document.getElementById(id).addEventListener('input',checkPersonal);
+      document.getElementById(id).addEventListener('change',checkPersonal);
+      document.getElementById(id).addEventListener('blur',checkPersonal);
+    });
+    bookingFields.forEach(id=>{
+      document.getElementById(id).addEventListener('input',checkBooking);
+      document.getElementById(id).addEventListener('change',checkBooking);
+      document.getElementById(id).addEventListener('blur',checkBooking);
+    });
+
+    // Init
+    window.addEventListener('load',()=>{
+      document.getElementById('year').textContent=new Date().getFullYear();
+      loadMaps();
+      setProgress(1);
+    });
+  </script>
+</body>
+</html>
